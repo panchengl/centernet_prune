@@ -24,4 +24,6 @@ attention:
 
     2. dla_34_dcn backbone fps in lower than paper, about 50ms and some postprocess time in 2080Ti
 
+how to train:
 
+    python test_main.py  ctdet --exp_id coco_dla --batch_size 32  --lr 1.25e-4 --gpus 0,1
