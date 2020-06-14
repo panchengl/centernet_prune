@@ -59,7 +59,7 @@ def main(opt):
             with torch.no_grad():
                 log_dict_val, preds = trainer.val(epoch, val_loader)
                 val_loader.dataset.run_eval(preds, opt.save_dir)
-                result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_hg/results.json'
+                result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/default/results.json'
                 anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
                 ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
                 print(ap_list, map)

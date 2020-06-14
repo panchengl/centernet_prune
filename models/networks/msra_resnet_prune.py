@@ -14,6 +14,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
+import numpy as np
+
 
 BN_MOMENTUM = 0.1
 
@@ -66,16 +68,22 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, percent=1, name=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
+        prune_inplanes = int(np.floor(inplanes * percent))
+        prune_planes = int(np.floor(planes * percent))
+        prune_out_planes = int(np.floor(planes * self.expansion*percent))
+        # prune_inplanes = inplanes
+        # prune_planes = planes
+        # prune_out_planes = planes*self.expansion
+        self.conv1 = nn.Conv2d(prune_inplanes, prune_planes, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(prune_planes, momentum=BN_MOMENTUM)
+        self.conv2 = nn.Conv2d(prune_planes, prune_planes, kernel_size=3, stride=stride,
                                padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.conv3 = nn.Conv2d(planes, planes * self.expansion, kernel_size=1,
+        self.bn2 = nn.BatchNorm2d(prune_planes, momentum=BN_MOMENTUM)
+        self.conv3 = nn.Conv2d(prune_planes, prune_out_planes, kernel_size=1,
                                bias=False)
-        self.bn3 = nn.BatchNorm2d(planes * self.expansion,
+        self.bn3 = nn.BatchNorm2d(prune_out_planes,
                                   momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -106,26 +114,40 @@ class Bottleneck(nn.Module):
 
 class PoseResNet(nn.Module):
 
-    def __init__(self, block, layers, heads, head_conv, **kwargs):
+    def __init__(self, block, layers, heads, head_conv, percent, **kwargs):
+        print("use prune res_101")
         self.inplanes = 64
         self.deconv_with_bias = False
         self.heads = heads
-
+        self.percent = percent
         super(PoseResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(3, int(np.floor(64*percent)), kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = nn.BatchNorm2d(64, momentum=BN_MOMENTUM)
+        self.bn1 = nn.BatchNorm2d(int(np.floor(64*percent)), momentum=BN_MOMENTUM)
+        # self.conv1 = nn.Conv2d(3, int(np.floor(64)), kernel_size=7, stride=2, padding=3,
+        #                        bias=False)
+        # self.bn1 = nn.BatchNorm2d(int(np.floor(64)), momentum=BN_MOMENTUM)
+
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        # self.layer1 = self._make_layer(block, int(np.floor(self.percent *64)), layers[0])
+        # self.layer2 = self._make_layer(block, int(np.floor(self.percent *128)), layers[1], stride=2)
+        # self.layer3 = self._make_layer(block, int(np.floor(self.percent *256)), layers[2], stride=2)
+        # self.layer4 = self._make_layer(block, int(np.floor(self.percent *512)), layers[3], stride=2)
+        self.layer1 = self._make_layer(block, 64, layers[0], percent=self.percent)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, percent=self.percent)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, percent=self.percent)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, percent=self.percent)
+        # self.layer1 = self._make_layer(block, 64, layers[0])
+        # self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        # self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        # self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
         # used for deconv layers
         self.deconv_layers = self._make_deconv_layer(
             3,
-            [256, 256, 256],
+            # [int(np.floor(self.percent *256)), int(np.floor(self.percent *256)), int(np.floor(self.percent *256))],
+           [256, 256, 256],
             [4, 4, 4],
         )
         # self.final_layer = []
@@ -135,9 +157,11 @@ class PoseResNet(nn.Module):
           if head_conv > 0:
             fc = nn.Sequential(
                 nn.Conv2d(256, head_conv,
+                # nn.Conv2d(int(np.floor(self.percent *256)), head_conv,
                   kernel_size=3, padding=1, bias=True),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(head_conv, num_output, 
+                nn.Conv2d(head_conv, num_output,
+                # nn.Conv2d(int(np.floor(self.percent *head_conv)), num_output,
                   kernel_size=1, stride=1, padding=0))
           else:
             fc = nn.Conv2d(
@@ -151,22 +175,22 @@ class PoseResNet(nn.Module):
 
         # self.final_layer = nn.ModuleList(self.final_layer)
 
-    def _make_layer(self, block, planes, blocks, stride=1):
+    def _make_layer(self, block, planes, blocks, stride=1, percent=0.8):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),
-            )
+                nn.Conv2d(int(np.floor(self.inplanes*percent)), int(np.floor(planes * block.expansion*percent)), kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(int(np.floor(planes * block.expansion*percent)), momentum=BN_MOMENTUM),)
+                # nn.Conv2d(self.inplanes, planes * block.expansion,kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),)
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        # layers.append(block(int(np.floor(self.inplanes*percent)), planes, stride, downsample))
+        layers.append(block(self.inplanes, planes, stride, downsample, percent=percent))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
+            layers.append(block(self.inplanes, planes, percent=percent))
 
         return nn.Sequential(*layers)
+
 
     def _get_deconv_cfg(self, deconv_kernel, index):
         if deconv_kernel == 4:
@@ -193,9 +217,18 @@ class PoseResNet(nn.Module):
                 self._get_deconv_cfg(num_kernels[i], i)
 
             planes = num_filters[i]
-            layers.append(
-                nn.ConvTranspose2d(
-                    in_channels=self.inplanes,
+            if i == 0:
+                layers.append(
+                nn.ConvTranspose2d(in_channels=int(np.floor(self.inplanes*self.percent)),
+                    out_channels=planes,
+                    kernel_size=kernel,
+                    stride=2,
+                    padding=padding,
+                    output_padding=output_padding,
+                    bias=self.deconv_with_bias))
+            else:
+                layers.append(
+                nn.ConvTranspose2d(in_channels=self.inplanes,
                     out_channels=planes,
                     kernel_size=kernel,
                     stride=2,
@@ -260,7 +293,7 @@ class PoseResNet(nn.Module):
             url = model_urls['resnet{}'.format(num_layers)]
             pretrained_state_dict = model_zoo.load_url(url)
             print('=> loading pretrained model {}'.format(url))
-            self.load_state_dict(pretrained_state_dict, strict=False)
+            # self.load_state_dict(pretrained_state_dict, strict=False)
         else:
             print('=> imagenet pretrained model dose not exist')
             print('=> please download it first')
@@ -274,9 +307,9 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
                152: (Bottleneck, [3, 8, 36, 3])}
 
 
-def get_pose_net(num_layers, heads, head_conv):
+def get_pose_net(num_layers, heads, head_conv, percent):
   block_class, layers = resnet_spec[num_layers]
 
-  model = PoseResNet(block_class, layers, heads, head_conv=head_conv)
-  model.init_weights(num_layers, pretrained=True)
+  model = PoseResNet(block_class, layers, heads, head_conv=head_conv, percent=percent)
+  # model.init_weights(num_layers, pretrained=True)
   return model
