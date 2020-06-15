@@ -11,7 +11,7 @@
 
         first: you can train a best model(best map) in using my code
 
-        second: python l1_prune_centernet_main.py ctdet --gpus 0 --test (attention: if u want use map as criterion, u must add --test)
+        second: python l1_prune_centernet_main.py ctdet --exp_id coco_res_prune --gpus 0 --test (attention: if u want use map as criterion, u must add --test)
 
         last: the code will prune one model, the default channels pruning rate is 0.2(204M -> 145M). and the code will auto finetune model , u just wait to get a best model
 

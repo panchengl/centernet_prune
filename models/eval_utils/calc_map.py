@@ -1,7 +1,13 @@
 from models.eval_utils.ap_utils import parse_gt_rec,  voc_eval, AverageMeter
 import json
 def calc_voc_map(result_json_pth, anno_json_pth, score_th=0.3, class_num=5):
-    file = open(result_json_pth, "rb")
+    try:
+        file = open(result_json_pth, "rb")
+    except:
+        print(" No such file or directory %s"%result_json_pth)
+        ap_list = [0,0,0,0,0]
+        map = 0
+        return ap_list, map
     fileJson = json.load(file)
     pred_content = []
     for file in fileJson:
