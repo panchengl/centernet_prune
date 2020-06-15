@@ -145,21 +145,22 @@ def main(opt):
     best_ap = 1e-10
     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
         mark = epoch
-        with torch.no_grad():
-            log_dict_val, preds = trainer.val(epoch, val_loader)
-            val_loader.dataset.run_eval(preds, opt.save_dir)
-            result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/results.json'
-            anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
-            ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
-            print("after prune map is", ap_list, map)
-            print("[INFO]: begining finetune in datasets")
+        # with torch.no_grad():
+        #     log_dict_val, preds = trainer.val(epoch, val_loader)
+        #     val_loader.dataset.run_eval(preds, opt.save_dir)
+        #     result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/results.json'
+        #     anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
+        #     ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
+        #     print("after prune map is", ap_list, map)
+        #     print("[INFO]: begining finetune in datasets")
         log_dict_train, _ = trainer.train(epoch, train_loader)
         if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)), epoch, prune_model, optimizer)
             with torch.no_grad():
                 log_dict_val, preds = trainer.val(epoch, val_loader)
                 val_loader.dataset.run_eval(preds, opt.save_dir)
-                result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/results.json'
+                # result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/results.json'
+                result_json_pth = os.path.join(opt.save_dir, "results.json")
                 anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
                 ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
                 print(ap_list, map)

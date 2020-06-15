@@ -15,6 +15,7 @@ import numpy as np
 
 BatchNorm = nn.BatchNorm2d
 
+
 def get_model_url(data='imagenet', name='dla34', hash='ba72cf86'):
     return join('http://dl.yf.io/dla/models', data, '{}-{}.pth'.format(name, hash))
 
@@ -222,6 +223,8 @@ class DLA(nn.Module):
     def __init__(self, levels, channels, num_classes=1000,
                  block=BasicBlock, residual_root=False, return_levels=False,
                  pool_size=7, linear_root=False):
+       # levels = [1, 1, 1, 2, 2, 1],
+       # channels = [16, 32, 64, 128, 256, 512],
         super(DLA, self).__init__()
         self.channels = channels
         self.return_levels = return_levels
@@ -301,7 +304,7 @@ class DLA(nn.Module):
 
             return x
 
-    def load_pretrained_model(self,  data='imagenet', name='dla34', hash='ba72cf86'):
+    def load_pretrained_model(self, data='imagenet', name='dla34', hash='ba72cf86'):
         fc = self.fc
         if name.endswith('.pth'):
             model_weights = torch.load(data + name)
@@ -521,6 +524,7 @@ class DLAUp(nn.Module):
             layers[-i - 1:] = y
         return x
 
+
 def fill_fc_weights(layers):
     for m in layers.modules():
         if isinstance(m, nn.Conv2d):
@@ -530,6 +534,7 @@ def fill_fc_weights(layers):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
+
 class DLASeg(nn.Module):
     def __init__(self, base_name, heads,
                  pretrained=True, down_ratio=4, head_conv=256):
@@ -538,10 +543,11 @@ class DLASeg(nn.Module):
         self.heads = heads
         self.first_level = int(np.log2(down_ratio))
         self.base = globals()[base_name](
-          pretrained=pretrained, return_levels=True)
+            pretrained=pretrained, return_levels=True)
         channels = self.base.channels
         scales = [2 ** i for i in range(len(channels[self.first_level:]))]
         self.dla_up = DLAUp(channels[self.first_level:], scales=scales)
+        self.module_list = nn.Module
         '''
         self.fc = nn.Sequential(
             nn.Conv2d(channels[self.first_level], classes, kernel_size=1,
@@ -553,49 +559,27 @@ class DLASeg(nn.Module):
             classes = self.heads[head]
             if head_conv > 0:
                 fc = nn.Sequential(
-                  nn.Conv2d(channels[self.first_level], head_conv,
-                    kernel_size=3, padding=1, bias=True),
-                  nn.ReLU(inplace=True),
-                  nn.Conv2d(head_conv, classes, 
-                    kernel_size=1, stride=1, 
-                    padding=0, bias=True))
+                    nn.Conv2d(channels[self.first_level], head_conv,
+                              kernel_size=3, padding=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(head_conv, classes,
+                              kernel_size=1, stride=1,
+                              padding=0, bias=True))
                 if 'hm' in head:
                     fc[-1].bias.data.fill_(-2.19)
                 else:
                     fill_fc_weights(fc)
             else:
-                fc = nn.Conv2d(channels[self.first_level], classes, 
-                  kernel_size=1, stride=1, 
-                  padding=0, bias=True)
+                fc = nn.Conv2d(channels[self.first_level], classes,
+                               kernel_size=1, stride=1,
+                               padding=0, bias=True)
                 if 'hm' in head:
                     fc.bias.data.fill_(-2.19)
                 else:
                     fill_fc_weights(fc)
             self.__setattr__(head, fc)
 
-        '''
-        up_factor = 2 ** self.first_level
-        if up_factor > 1:
-            up = nn.ConvTranspose2d(classes, classes, up_factor * 2,
-                                    stride=up_factor, padding=up_factor // 2,
-                                    output_padding=0, groups=classes,
-                                    bias=False)
-            fill_up_weights(up)
-            up.weight.requires_grad = False
-        else:
-            up = Identity()
-        self.up = up
-        self.softmax = nn.LogSoftmax(dim=1)
-        
 
-        for m in self.fc.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, BatchNorm):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-        '''
 
     def forward(self, x):
         x = self.base(x)
@@ -607,41 +591,64 @@ class DLASeg(nn.Module):
             ret[head] = self.__getattr__(head)(x)
         return [ret]
 
-    '''
-    def optim_parameters(self, memo=None):
-        for param in self.base.parameters():
-            yield param
-        for param in self.dla_up.parameters():
-            yield param
-        for param in self.fc.parameters():
-            yield param
-    '''
-'''
-def dla34up(classes, pretrained_base=None, **kwargs):
-    model = DLASeg('dla34', classes, pretrained_base=pretrained_base, **kwargs)
-    return model
-
-
-def dla60up(classes, pretrained_base=None, **kwargs):
-    model = DLASeg('dla60', classes, pretrained_base=pretrained_base, **kwargs)
-    return model
-
-
-def dla102up(classes, pretrained_base=None, **kwargs):
-    model = DLASeg('dla102', classes,
-                   pretrained_base=pretrained_base, **kwargs)
-    return model
-
-
-def dla169up(classes, pretrained_base=None, **kwargs):
-    model = DLASeg('dla169', classes,
-                   pretrained_base=pretrained_base, **kwargs)
-    return model
-'''
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-  model = DLASeg('dla{}'.format(num_layers), heads,
-                 pretrained=True,
-                 down_ratio=down_ratio,
-                 head_conv=head_conv)
-  return model
+    model = DLASeg('dla{}'.format(num_layers), heads,
+                   pretrained=True,
+                   down_ratio=down_ratio,
+                   head_conv=head_conv)
+    return model
+
+
+
+class DLA34_v0(nn.Module):
+    def __init__(self, num_layers, heads,
+                 down_ratio=4, pretrained=True, head_conv=256):
+        super(DLA34_v0, self).__init__()
+        print("panchneglong")
+        print("panchneglong")
+        print("panchneglong")
+        print("panchneglong")
+        self.num_layers = 34
+        assert down_ratio in [2, 4, 8, 16]
+        self.heads = heads
+        self.first_level = int(np.log2(down_ratio))
+        self.base = globals()['dla{}'.format(self.num_layers)](
+            pretrained=pretrained, return_levels=True)
+        channels = self.base.channels
+        scales = [2 ** i for i in range(len(channels[self.first_level:]))]
+        self.dla_up = DLAUp(channels[self.first_level:], scales=scales)
+        self.module_list = nn.Module
+        for head in self.heads:
+            classes = self.heads[head]
+            if head_conv > 0:
+                fc = nn.Sequential(
+                    nn.Conv2d(channels[self.first_level], head_conv,
+                              kernel_size=3, padding=1, bias=True),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(head_conv, classes,
+                              kernel_size=1, stride=1,
+                              padding=0, bias=True))
+                if 'hm' in head:
+                    fc[-1].bias.data.fill_(-2.19)
+                else:
+                    fill_fc_weights(fc)
+            else:
+                fc = nn.Conv2d(channels[self.first_level], classes,
+                               kernel_size=1, stride=1,
+                               padding=0, bias=True)
+                if 'hm' in head:
+                    fc.bias.data.fill_(-2.19)
+                else:
+                    fill_fc_weights(fc)
+            self.__setattr__(head, fc)
+
+
+
+    def forward(self, x):
+        x = self.base(x)
+        x = self.dla_up(x[self.first_level:])
+        ret = {}
+        for head in self.heads:
+            ret[head] = self.__getattr__(head)(x)
+        return [ret]

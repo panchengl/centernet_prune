@@ -319,106 +319,23 @@ class DLA(nn.Module):
         self.fc = fc
 
 
+# def dla34(pretrained, **kwargs):  # DLA-34
+#     model = DLA([1, 1, 1, 2, 2, 1],
+#                 [16, 32, 64, 128, 256, 512],
+#                 block=BasicBlock, **kwargs)
+#     if pretrained:
+#         model.load_pretrained_model(data='imagenet', name='dla34', hash='ba72cf86')
+#     return model
+import numpy as np
+
 def dla34(pretrained, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
-                [16, 32, 64, 128, 256, 512],
+                # [16, 32, 64, 128, 256, 512],
+                [int(np.floor(16*0.8)), int(np.floor(32*0.8)), int(np.floor(64*0.8)), int(np.floor(128*0.8)), int(np.floor(256*0.8)), int(np.floor(512*0.8))],
                 block=BasicBlock, **kwargs)
     if pretrained:
         model.load_pretrained_model(data='imagenet', name='dla34', hash='ba72cf86')
     return model
-
-
-def dla46_c(pretrained=None, **kwargs):  # DLA-46-C
-    Bottleneck.expansion = 2
-    model = DLA([1, 1, 1, 2, 2, 1],
-                [16, 32, 64, 64, 128, 256],
-                block=Bottleneck, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla46_c')
-    return model
-
-
-def dla46x_c(pretrained=None, **kwargs):  # DLA-X-46-C
-    BottleneckX.expansion = 2
-    model = DLA([1, 1, 1, 2, 2, 1],
-                [16, 32, 64, 64, 128, 256],
-                block=BottleneckX, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla46x_c')
-    return model
-
-
-def dla60x_c(pretrained, **kwargs):  # DLA-X-60-C
-    BottleneckX.expansion = 2
-    model = DLA([1, 1, 1, 2, 3, 1],
-                [16, 32, 64, 64, 128, 256],
-                block=BottleneckX, **kwargs)
-    if pretrained:
-        model.load_pretrained_model(data='imagenet', name='dla60x_c', hash='b870c45c')
-    return model
-
-
-def dla60(pretrained=None, **kwargs):  # DLA-60
-    Bottleneck.expansion = 2
-    model = DLA([1, 1, 1, 2, 3, 1],
-                [16, 32, 128, 256, 512, 1024],
-                block=Bottleneck, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla60')
-    return model
-
-
-def dla60x(pretrained=None, **kwargs):  # DLA-X-60
-    BottleneckX.expansion = 2
-    model = DLA([1, 1, 1, 2, 3, 1],
-                [16, 32, 128, 256, 512, 1024],
-                block=BottleneckX, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla60x')
-    return model
-
-
-def dla102(pretrained=None, **kwargs):  # DLA-102
-    Bottleneck.expansion = 2
-    model = DLA([1, 1, 1, 3, 4, 1], [16, 32, 128, 256, 512, 1024],
-                block=Bottleneck, residual_root=True, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla102')
-    return model
-
-
-def dla102x(pretrained=None, **kwargs):  # DLA-X-102
-    BottleneckX.expansion = 2
-    model = DLA([1, 1, 1, 3, 4, 1], [16, 32, 128, 256, 512, 1024],
-                block=BottleneckX, residual_root=True, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla102x')
-    return model
-
-
-def dla102x2(pretrained=None, **kwargs):  # DLA-X-102 64
-    BottleneckX.cardinality = 64
-    model = DLA([1, 1, 1, 3, 4, 1], [16, 32, 128, 256, 512, 1024],
-                block=BottleneckX, residual_root=True, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla102x2')
-    return model
-
-
-def dla169(pretrained=None, **kwargs):  # DLA-169
-    Bottleneck.expansion = 2
-    model = DLA([1, 1, 2, 3, 5, 1], [16, 32, 128, 256, 512, 1024],
-                block=Bottleneck, residual_root=True, **kwargs)
-    if pretrained is not None:
-        model.load_pretrained_model(pretrained, 'dla169')
-    return model
-
-
-def set_bn(bn):
-    global BatchNorm
-    BatchNorm = bn
-    dla.BatchNorm = bn
-
 
 class Identity(nn.Module):
     def __init__(self):
@@ -603,12 +520,14 @@ def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
 
 class DLA34_v0(nn.Module):
     def __init__(self, num_layers, heads,
-                 down_ratio=4, pretrained=True, head_conv=256):
+                 down_ratio=4, pretrained=False, head_conv=256):
         super(DLA34_v0, self).__init__()
         print("panchneglong")
         print("panchneglong")
         print("panchneglong")
         print("panchneglong")
+        # [1, 1, 1, 2, 2, 1],
+        # [16, 32, 64, 128, 256, 512],
         self.num_layers = 34
         assert down_ratio in [2, 4, 8, 16]
         self.heads = heads
