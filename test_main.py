@@ -12,8 +12,6 @@ from models.dataloaders.dataset_factory import get_dataset
 from models.trains.ct_trainer import CtTrainer
 from models.logger import Logger
 
-# from models.eval_utils.calc_map import calc_voc_ap, calc_voc_ap_model
-from models.detectors.detector_factory import detector_factory
 def main(opt):
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark and not opt.test
@@ -36,16 +34,8 @@ def main(opt):
     trainer = CtTrainer(opt, model, optimizer)
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
     TASK = 'ctdet'  # or 'multi_pose' for human pose estimation
-    # detector = detector_factory[TASK](opt)
     best_val_loss = 1e10
     best_ap = 1e-10
-    # with torch.no_grad():
-    #     log_dict_val, preds = trainer.val(0, val_loader)
-    #     val_loader.dataset.run_eval(preds, opt.save_dir)
-    #     result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_dla0/results.json'
-    #     anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
-    #     ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
-    #     print(ap_list, map)
     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
         mark = epoch
         log_dict_train, _ = trainer.train(epoch, train_loader)
@@ -59,7 +49,7 @@ def main(opt):
             with torch.no_grad():
                 log_dict_val, preds = trainer.val(epoch, val_loader)
                 val_loader.dataset.run_eval(preds, opt.save_dir)
-                result_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/default/results.json'
+                result_json_pth = os.path.join(opt.save_dir, "results.json")
                 anno_json_pth = '/home/pcl/pytorch_work/my_github/centernet_simple/data/dianli/annotations/test.json'
                 ap_list, map = trainer.run_epoch_voc(result_json_pth, anno_json_pth, score_th=0.01, class_num=opt.num_classes)
                 print(ap_list, map)
