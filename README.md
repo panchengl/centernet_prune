@@ -15,6 +15,8 @@
 
         last: the code will prune one model, the default channels pruning rate is 0.2(204M -> 145M). and the code will auto finetune model , u just wait to get a best model
 
+        attentions: if u early stop tarining or want finetune a prune model, u need do this command: python finetune_main.py ctdet --exp_id coco_res_prune --gpus 0 --test
+
     5. the map values compared:
 
         in my datasets, the scene is more complicated than coco datasets, map(204M) is 0.49 before prune, map(145M) also is 0.49 after prune(pruning rate is 0.2), so, u can use this code in your datasets
