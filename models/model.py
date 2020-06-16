@@ -24,12 +24,12 @@ _model_factory = {
   'resPrune': get_resnet_prune,
 }
 
-def create_model(arch, heads, head_conv):
+def create_model(arch, heads, head_conv, percent=1):
   num_layers = int(arch[arch.find('_') + 1:]) if '_' in arch else 0
   print("num layer is", num_layers)
   arch = arch[:arch.find('_')] if '_' in arch else arch
   get_model = _model_factory[arch]
-  model = get_model(num_layers=num_layers, heads=heads, head_conv=head_conv)
+  model = get_model(num_layers=num_layers, heads=heads, head_conv=head_conv, percent=percent)
   return model
 
 def create_model_101_prune(arch, heads, head_conv, percent):

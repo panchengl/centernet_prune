@@ -11,8 +11,8 @@ from models.dataloaders.dataset_factory import get_dataset
 import numpy as np
 from models.trains.ct_trainer import CtTrainer
 
-prune_model_dir = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/default/'
-prune_model_name = 'model_best_val_loss_0.66.pth'
+prune_model_dir = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/'
+prune_model_name = 'model_best_map_0.46.pth'
 percent = 0.8
 def main(opt):
     torch.manual_seed(opt.seed)

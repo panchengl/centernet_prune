@@ -31,7 +31,9 @@ class opts(object):
                              help='resume an experiment. '
                                   'Reloaded the optimizer parameter and '
                                   'set load_model to model_last.pth '
-                                  'in the exp dir if load_model is empty.') 
+                                  'in the exp dir if load_model is empty.')
+    self.parser.add_argument('--prune_percent', default='0.8',
+                             help='save_percent')
 
     # system
     self.parser.add_argument('--gpus', default='0', 
@@ -58,7 +60,7 @@ class opts(object):
                              choices=['white', 'black'])
     
     # model
-    self.parser.add_argument('--arch', default='res_101',
+    self.parser.add_argument('--arch', default='resPrune_101',
                              help='model architecture. Currently tested'
                                   'res_18 | res_101 | resdcn_18 | resdcn_101 |'
                                   'dlav0_34 | dla_34 | hourglass')
