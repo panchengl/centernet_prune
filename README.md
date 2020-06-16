@@ -19,7 +19,7 @@
 
     5. the map values compared:
 
-        in my datasets, the scene is more complicated than coco datasets, map(204M) is 0.49 before prune, map(145M) also is 0.49 after prune(pruning rate is 0.2), so, u can use this code in your datasets
+        in my datasets, the scene is more complicated than coco datasets, map(204M) is 0.49 before prune, map(139M) also is 0.47 after prune(pruning rate is 0.2), so, u can use this code in your datasets
 
      6. next stages:
 
