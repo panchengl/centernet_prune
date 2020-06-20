@@ -148,7 +148,7 @@ def obtain_filters_mask_l1_dict(model, thre_l1, layer_keep):
     return num_filters, filters_mask, prune_idx, prune_bn_bias_idx
 
 
-def obtain_filters_mask_l1_dict_percent(model, percent):
+def obtain_filters_mask_l1_dict_percent(model, percent_rate):
     pruned = 0
     total = 0
     prune_idx = []
@@ -164,10 +164,10 @@ def obtain_filters_mask_l1_dict_percent(model, percent):
             prune_idx.append(idx)
             weights =  model.state_dict()[name]
             channels, N, H, W = model.state_dict()[name].shape[0], model.state_dict()[name].shape[1], model.state_dict()[name].shape[2], model.state_dict()[name].shape[3]
-            save_channels = int(np.floor(channels * percent))
+            save_channels = int(np.floor(channels * percent_rate))
             channels_weights = torch.flatten(torch.sum(torch.reshape(weights, (channels, -1)), dim=-1))
             sorted_channels_sum, sorted_l1_index = torch.sort(channels_weights)
-            thresh_l1 = sorted_channels_sum[int(np.floor(len(sorted_channels_sum) * (1-percent)))]
+            thresh_l1 = sorted_channels_sum[int(np.floor(len(sorted_channels_sum) * (1-percent_rate)))]
             mask = channels_weights.gt(thresh_l1).float()
             remain = int(mask.sum())
             pruned = pruned + mask.shape[0] - remain

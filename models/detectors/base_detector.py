@@ -21,7 +21,7 @@ class BaseDetector(object):
       opt.device = torch.device('cpu')
     
     print('Creating model...')
-    self.model = create_model(opt.arch, opt.heads, opt.head_conv)
+    self.model = create_model(opt.arch, opt.heads, opt.head_conv, opt.prune_percent)
     self.model = load_model(self.model, opt.load_model)
     self.model = self.model.to(opt.device)
     self.model.eval()
@@ -100,10 +100,6 @@ class BaseDetector(object):
     
     detections = []
     for scale in self.scales:
-      # print("scales is", self.scales)
-      # print("scalse is", scale)
-      # print("scales is", self.scales)
-      # print("scalse is", scale)
       scale_start_time = time.time()
       if not pre_processed:
         images, meta = self.pre_process(image, scale, meta)

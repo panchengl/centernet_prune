@@ -1,3 +1,14 @@
+20200630 updates:
+
+    add iterations prune, u can iteratively prun the centernet model use this version. this is my ap 50 in my datasets,the scene is more complicated than coco datasets:
+
+    original     model: 204M ap50: 0.49
+
+    first prune  model: 139M ap50: 0.48
+
+    second prune model: 96M  ap50: 0.47
+
+
 20200614 updates:
     add centernet prune, attention:
 
@@ -13,13 +24,13 @@
 
         second: python l1_prune_centernet_main.py ctdet --exp_id coco_res_prune --gpus 0 --test (attention: if u want use map as criterion, u must add --test)
 
-        last: the code will prune one model, the default channels pruning rate is 0.2(204M -> 145M). and the code will auto finetune model , u just wait to get a best model
+        last: the code will prune one model, the default channels pruning rate is 0.2(204M -> 139M). and the code will auto finetune model , u just wait to get a best model
 
         attentions: if u early stop tarining or want finetune a prune model, u need do this command: python finetune_main.py ctdet --exp_id coco_res_prune --gpus 0 --test
 
     5. the map values compared:
 
-        in my datasets, the scene is more complicated than coco datasets, map(204M) is 0.49 before prune, map(139M) also is 0.47 after prune(pruning rate is 0.2), so, u can use this code in your datasets
+        in my datasets, the scene is more complicated than coco datasets, map(204M) is 0.49 before prune, map(139M) also is 0.48 after prune(pruning rate is 0.2), so, u can use this code in your datasets
 
      6. next stages:
 

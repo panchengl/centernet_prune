@@ -14,7 +14,7 @@ vis_thresh = 0.3
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 # MODEL_PATH ='/home/pcl/pytorch_work/my_github/centernet_simple/weights/model_best_dla34.pth'
-MODEL_PATH ='/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/model_best_map_0.46.pth'
+MODEL_PATH ='/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/model_best_map_0.48.pth'
 TASK = 'ctdet' # or 'multi_pose' for human pose estimation
 # opt = opts().init('{} --load_model {} --flip_test'.format(TASK, MODEL_PATH).split(' '))
 opt = opts().init('{} --load_model {}'.format(TASK, MODEL_PATH).split(' '))

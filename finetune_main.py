@@ -11,9 +11,10 @@ from models.dataloaders.dataset_factory import get_dataset
 import numpy as np
 from models.trains.ct_trainer import CtTrainer
 
-prune_model_dir = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune/'
-prune_model_name = 'model_best_map_0.46.pth'
-percent = 0.8
+prune_model_dir = '/home/pcl/pytorch_work/my_github/centernet_simple/exp/ctdet/coco_res_prune2/'
+prune_model_name = 'model_best_map_0.47.pth'
+percent_rate = 0.8
+prune_cnt = 2
 def main(opt):
     torch.manual_seed(opt.seed)
     torch.backends.cudnn.benchmark = not opt.not_cuda_benchmark and not opt.test
@@ -22,11 +23,12 @@ def main(opt):
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
     print('Creating model...')
-    prune_model = create_model_101_prune('resPrune_101', opt.heads, opt.head_conv, percent=percent)
+    # prune_model = create_model_101_prune('resPrune_101', opt.heads, opt.head_conv, percent=percent)
+    prune_model = create_model_101_prune('resPrune_101', opt.heads, opt.head_conv, percent_rate=percent_rate, prune_cnt=prune_cnt)
     optimizer = torch.optim.Adam(prune_model.parameters(), opt.lr)
-    prune_model, optimizer, start_epoch = load_model(prune_model, os.path.join(prune_model_dir, prune_model_name), optimizer=optimizer, resume=opt.resume, lr=opt.lr,
+    prune_model, optimizer, start_epoch = load_model(prune_model, os.path.join(opt.save_dir, prune_model_name), optimizer=optimizer, resume=opt.resume, lr=opt.lr,
                                                lr_step=opt.lr_step)
-    # prune_model.load_state_dict(torch.load(os.path.join(prune_model_dir, prune_model_name)), strict=True)
+    # prune_model.load_state_dict(torch.load(os.path.join(opt.save_dir, prune_model_name)), strict=True)
     # start_epoch = 0
     train_loader = torch.utils.data.DataLoader(Dataset(opt, 'train'), batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers, pin_memory=True, drop_last=True)
     val_loader = torch.utils.data.DataLoader(Dataset(opt, 'val'), batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
@@ -53,7 +55,7 @@ def main(opt):
                            epoch, prune_model)
             if map > best_ap:
                 best_ap = map
-                save_model(os.path.join(opt.save_dir, 'model_best_map_' + str(round(best_ap, 2)) + '.pth'), epoch,
+                save_model(os.path.join(opt.save_dir, 'model_best_map_' + str(round(best_ap, 3)) + '.pth'), epoch,
                            prune_model)
         else:
             save_model(os.path.join(opt.save_dir, 'model_last.pth'), epoch, prune_model, optimizer)

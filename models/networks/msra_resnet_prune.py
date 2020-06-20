@@ -68,11 +68,15 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, percent=1, name=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, percent=1, prune_cnt=0, name=None):
         super(Bottleneck, self).__init__()
-        prune_inplanes = int(np.floor(inplanes * percent))
-        prune_planes = int(np.floor(planes * percent))
-        prune_out_planes = int(np.floor(planes * self.expansion*percent))
+        prune_inplanes = inplanes
+        prune_planes = planes
+        prune_out_planes = planes * self.expansion
+        for i in range(prune_cnt):
+            prune_inplanes = int(np.floor(prune_inplanes * percent))
+            prune_planes = int(np.floor(prune_planes * percent))
+            prune_out_planes = int(np.floor(prune_out_planes*percent))
         # prune_inplanes = inplanes
         # prune_planes = planes
         # prune_out_planes = planes*self.expansion
@@ -114,18 +118,24 @@ class Bottleneck(nn.Module):
 
 class PoseResNet(nn.Module):
 
-    def __init__(self, block, layers, heads, head_conv, percent, **kwargs):
+    def __init__(self, block, layers, heads, head_conv, percent, prune_cnt=0, **kwargs):
         print("use prune res_101")
         self.inplanes = 64
         self.deconv_with_bias = False
         self.heads = heads
+        percent = float(percent)
         self.percent = percent
+        self.prune_cnt = prune_cnt
         super(PoseResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, int(np.floor(64*percent)), kernel_size=7, stride=2, padding=3,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(int(np.floor(64*percent)), momentum=BN_MOMENTUM)
-        # self.conv1 = nn.Conv2d(3, int(np.floor(64)), kernel_size=7, stride=2, padding=3,
-        #                        bias=False)
+        true_filters_input = 64
+        for i in range(prune_cnt):
+            true_filters_input = int(np.floor(true_filters_input * percent))
+        self.conv1 = nn.Conv2d(3, true_filters_input, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(true_filters_input, momentum=BN_MOMENTUM)
+
+        # self.conv1 = nn.Conv2d(3, int(np.floor(64*percent)), kernel_size=7, stride=2, padding=3, bias=False)
+        # self.bn1 = nn.BatchNorm2d(int(np.floor(64*percent)), momentum=BN_MOMENTUM)
+        # self.conv1 = nn.Conv2d(3, int(np.floor(64)), kernel_size=7, stride=2, padding=3, bias=False)
         # self.bn1 = nn.BatchNorm2d(int(np.floor(64)), momentum=BN_MOMENTUM)
 
         self.relu = nn.ReLU(inplace=True)
@@ -134,10 +144,10 @@ class PoseResNet(nn.Module):
         # self.layer2 = self._make_layer(block, int(np.floor(self.percent *128)), layers[1], stride=2)
         # self.layer3 = self._make_layer(block, int(np.floor(self.percent *256)), layers[2], stride=2)
         # self.layer4 = self._make_layer(block, int(np.floor(self.percent *512)), layers[3], stride=2)
-        self.layer1 = self._make_layer(block, 64, layers[0], percent=self.percent)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, percent=self.percent)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, percent=self.percent)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, percent=self.percent)
+        self.layer1 = self._make_layer(block, 64, layers[0], percent=self.percent, prune_cnt=prune_cnt)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, percent=self.percent, prune_cnt=prune_cnt)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, percent=self.percent, prune_cnt=prune_cnt)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, percent=self.percent, prune_cnt=prune_cnt)
         # self.layer1 = self._make_layer(block, 64, layers[0])
         # self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         # self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -175,19 +185,24 @@ class PoseResNet(nn.Module):
 
         # self.final_layer = nn.ModuleList(self.final_layer)
 
-    def _make_layer(self, block, planes, blocks, stride=1, percent=0.8):
+    def _make_layer(self, block, planes, blocks, stride=1, percent=0.8, prune_cnt=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(int(np.floor(self.inplanes*percent)), int(np.floor(planes * block.expansion*percent)), kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(int(np.floor(planes * block.expansion*percent)), momentum=BN_MOMENTUM),)
+            downsample_inplaces = self.inplanes
+            downsample_outputplaces = planes * block.expansion
+            for i in range(prune_cnt):
+                downsample_inplaces = int(np.floor(downsample_inplaces * percent))
+                downsample_outputplaces = int(np.floor(downsample_outputplaces * percent))
+            downsample = nn.Sequential(nn.Conv2d(int(downsample_inplaces), int(downsample_outputplaces), kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(downsample_outputplaces, momentum=BN_MOMENTUM),)
+            # downsample = nn.Sequential(nn.Conv2d(int(np.floor(self.inplanes*percent)), int(np.floor(planes * block.expansion*percent)), kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(int(np.floor(planes * block.expansion*percent)), momentum=BN_MOMENTUM),)
                 # nn.Conv2d(self.inplanes, planes * block.expansion,kernel_size=1, stride=stride, bias=False),  nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),)
 
         layers = []
         # layers.append(block(int(np.floor(self.inplanes*percent)), planes, stride, downsample))
-        layers.append(block(self.inplanes, planes, stride, downsample, percent=percent))
+        layers.append(block(self.inplanes, planes, stride, downsample, percent=percent, prune_cnt=prune_cnt))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, percent=percent))
+            layers.append(block(self.inplanes, planes, percent=percent, prune_cnt=prune_cnt))
 
         return nn.Sequential(*layers)
 
@@ -218,8 +233,11 @@ class PoseResNet(nn.Module):
 
             planes = num_filters[i]
             if i == 0:
+                first_de_conv_channels = self.inplanes
+                for i in range(self.prune_cnt):
+                    first_de_conv_channels = int(np.floor(first_de_conv_channels * self.percent))
                 layers.append(
-                nn.ConvTranspose2d(in_channels=int(np.floor(self.inplanes*self.percent)),
+                nn.ConvTranspose2d(in_channels=first_de_conv_channels,
                     out_channels=planes,
                     kernel_size=kernel,
                     stride=2,
@@ -307,9 +325,9 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
                152: (Bottleneck, [3, 8, 36, 3])}
 
 
-def get_pose_net(num_layers, heads, head_conv, percent):
+def get_pose_net(num_layers, heads, head_conv, percent, prune_cnt):
   block_class, layers = resnet_spec[num_layers]
 
-  model = PoseResNet(block_class, layers, heads, head_conv=head_conv, percent=percent)
+  model = PoseResNet(block_class, layers, heads, head_conv=head_conv, percent=percent, prune_cnt=prune_cnt)
   # model.init_weights(num_layers, pretrained=True)
   return model
