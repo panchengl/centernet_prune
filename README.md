@@ -1,3 +1,7 @@
+hey:
+
+    If you think my code helped you, please give me a star, thank u
+
 20200630 updates:
 
     add iterations prune, u can iteratively prun the centernet model use this version. this is my ap 50 in my datasets,the scene is more complicated than coco datasets:
@@ -41,7 +45,7 @@
 
 # centernet_simple
 
-first: this code is forked from https://github.com/xingyizhou/CenterNet
+first: this code is rewritern from official code
 
 changes:
 
@@ -67,6 +71,10 @@ attention:
 
     3. res101 is worse than hg104 and dla_34
 
+    4. when u calc map,  All the pictures in the coco or voc datasets  have gt objects, but the actual use may contain pictures without gt objects, so,i change some calc map code according principle, if u meet this scene, u can also use this code
+
 how to train:
 
     python test_main.py  ctdet --exp_id coco_dla --batch_size 32  --lr 1.25e-4 --gpus 0,1
+
+thanks official code :https://github.com/xingyizhou/CenterNet
